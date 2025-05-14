@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Absensi dengan Geofencing</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #DC8BE0 0%, #D50B8B 100%);
+      color: #333;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    p#status {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #555;
+      white-space: pre-line;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-top: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .success {
+      color: #27ae60;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #c0392b;
+      font-weight: bold;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      p#status {
+        font-size: 14px;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>Presensi Sarastya</h1>
+    <p id="status">Meminta izin untuk mendeteksi lokasi Anda...<br><span class="loader"></span></p>
+  </div>
+  <script>
+    // URL Google Form Anda
+    const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLScelO9JjQUnXvPyLcw6Iw2iel8we5n_4eaR0SArORr9mdEB1g/viewform";
+
+    function checkLocationAndRedirect() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            // Ambil latitude dan longitude pengguna
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+
+            // Koordinat kantor
+            var officeLat = -7.939686;
+            var officeLon = 112.625594;
+            var radius = 50;
+
+            // Hitung jarak menggunakan Haversine formula
+            var R = 6371000;
+            var dLat = (officeLat - lat) * Math.PI / 180;
+            var dLon = (officeLon - lon) * Math.PI / 180;
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat * Math.PI / 180) * Math.cos(officeLat * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            var distance = R * c;
+
+            // Tampilkan status
+            var statusElement = document.getElementById("status");
+            statusElement.innerHTML = `Lokasi Anda: (${lat}, ${lon}).<br>Jarak dari kantor: ${distance.toFixed(2)} meter.`;
+
+            // Cek apakah pengguna dalam radius
+            if (distance <= radius) {
+              statusElement.innerHTML += '<br><span class="success">Anda berada di wilayah kantor. Mengalihkan ke form...</span>';
+              setTimeout(() => {
+                window.location.href = formUrl;
+              }, 2000);
+            } else {
+              statusElement.innerHTML += '<br><span class="error">Anda berada di luar wilayah kantor! Absen hanya bisa dilakukan di kantor.</span>';
+            }
+          },
+          (error) => {
+            var statusElement = document.getElementById("status");
+            statusElement.innerHTML = `<span class="error">Gagal mendeteksi lokasi: ${error.code} - ${error.message}</span>`;
+          }
+        );
+      } else {
+        document.getElementById("status").innerHTML = '<span class="error">Browser tidak mendukung deteksi lokasi.</span>';
+      }
+    }
+
+    window.onload = checkLocationAndRedirect;
+  </script>
+</body>
+</html>
