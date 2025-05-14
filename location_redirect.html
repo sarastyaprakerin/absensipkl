@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Absensi dengan Geofencing</title>
+    </head>
+    <body>
+      <h1>Absensi Kantor</h1>
+      <p id="status">Meminta izin untuk mendeteksi lokasi Anda...</p>
+      <script>
+        // URL Google Form Anda (ganti dengan ID form Anda)
+        const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLScelO9JjQUnXvPyLcw6Iw2iel8we5n_4eaR0SArORr9mdEB1g/viewform";
+
+        function checkLocationAndRedirect() {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                // Ambil latitude dan longitude pengguna
+                var lat = position.coords.latitude;
+                var lon = position.coords.longitude;
+
+                // Koordinat kantor (sesuai data dari kamu)
+                var officeLat = -7.939686; // Latitude kantor
+                var officeLon = 112.625594; // Longitude kantor
+                var radius = 50; // Radius dalam meter
+
+                // Hitung jarak menggunakan Haversine formula
+                var R = 6371000; // Radius bumi dalam meter
+                var dLat = (officeLat - lat) * Math.PI / 180;
+                var dLon = (officeLon - lon) * Math.PI / 180;
+                var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(lat * Math.PI / 180) * Math.cos(officeLat * Math.PI / 180) *
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                var distance = R * c; // Jarak dalam meter
+
+                // Tampilkan status
+                document.getElementById("status").innerText = `Lokasi Anda: (${lat}, ${lon}). Jarak dari kantor: ${distance.toFixed(2)} meter.`;
+
+                // Cek apakah pengguna dalam radius
+                if (distance <= radius) {
+                  document.getElementById("status").innerText += "\nAnda berada di wilayah kantor. Mengalihkan ke form...";
+                  setTimeout(() => {
+                    window.location.href = formUrl;
+                  }, 2000);
+                } else {
+                  document.getElementById("status").innerText += "\nAnda berada di luar wilayah kantor! Absen hanya bisa dilakukan di kantor.";
+                }
+              },
+              (error) => {
+                // Jika pengguna menolak atau error
+                document.getElementById("status").innerText = `Gagal mendeteksi lokasi: ${error.code} - ${error.message}`;
+              }
+            );
+          } else {
+            // Jika browser tidak mendukung Geolocation
+            document.getElementById("status").innerText = "Browser tidak mendukung deteksi lokasi.";
+          }
+        }
+
+        window.onload = checkLocationAndRedirect;
+      </script>
+    </body>
+    </html>
